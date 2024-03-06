@@ -1,0 +1,4 @@
+aioboto3
+boto3
+fastapi
+uvicorn
