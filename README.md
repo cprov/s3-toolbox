@@ -73,3 +73,19 @@ $ curl -s http://localhost:8000/async | jq -c
 $ curl -s http://localhost:8000/sync | jq -c
 [{"name":"bazinga", ...]
 ```
+
+
+## Broken or malicious clients
+
+It triggers errors related with broken or malicious clients generating bad S3 signatures.
+
+```
+AWS_PROFILE=prod-below python s3_broken_sig.py
+[lots of DEBUG messages]
+...
+2024-03-12 22:14:29,479 botocore.parsers [DEBUG] Response body:
+b"<?xml version='1.0' encoding='UTF-8'?>\n<Error><Code>SignatureDoesNotMatch</Code>...
+...
+```
+
+Use this for message error validation. One should never leak more information than necessary ...
