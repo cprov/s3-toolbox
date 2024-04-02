@@ -24,6 +24,7 @@ Options:
 
 import argparse
 import boto3
+import botocore
 import os
 import sys
 import tempfile
@@ -31,14 +32,11 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 
+
+
 # Create an S3 client
-#aws_access_key_id = os.environ.get('AWS_ACCESS_KEY')
-#aws_secret_access_key = os.environ.get('AWS_SECRET_KEY')
-#boto3.setup_default_session(profile_name='mgl1-prod')
-s3 = boto3.resource('s3')
-#, endpoint_url='https://br-ne-1.magaluobjects.com',
-#                    aws_access_key_id=aws_access_key_id,
-#                    aws_secret_access_key=aws_secret_access_key)
+S3_CONFIG = botocore.client.Config(connect_timeout=15, read_timeout=10, retries={'max_attempts': 5})
+s3 = boto3.resource('s3', config=S3_CONFIG)
 
 
 class ProgressPercentage(object):
