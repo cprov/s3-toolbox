@@ -65,18 +65,26 @@ async def main():
     parser = argparse.ArgumentParser(description='AIO S3 list buckets')
     parser.add_argument('-p', '--page', type=int, default=1, help='Result page, starting on 1')
     parser.add_argument('-s', '--size', type=int, default=50, help='Page size')
+    parser.add_argument('--sync', default=False, action='store_true', help='Run sync version too')
     args = parser.parse_args()
 
     begin = (args.page - 1) * args.size
     end = begin + args.size
 
-    with timeit("SYNC ") as t:
-        sync_buckets = await list_buckets_sync(begin, end)
+    if args.sync:
+        with timeit("SYNC ") as t:
+            sync_buckets = await list_buckets_sync(begin, end)
+
     with timeit("ASYNC") as t:
         async_buckets = await list_buckets_async(begin, end)
-    assert sync_buckets == async_buckets, "Oops, mismatch info"
+    if args.sync:
+        assert sync_buckets == async_buckets, "Oops, mismatch info"
+
     for b in async_buckets:
         print(b)
+
+    size = sum(b["bytes"] for b in async_buckets)
+    print (f"Total account size: {size} bytes")
 
 
 if __name__ == '__main__':
