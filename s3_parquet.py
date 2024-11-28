@@ -67,8 +67,9 @@ class S3ParquetProcessor:
         for key in s3_keys:
             df = self.read_parquet_file(key)
             if columns:
-                df = df[columns]
-            dfs.append(df)
+                df = df[columns].dropna()
+            if not df.empty:
+                dfs.append(df)
         return pd.concat(dfs, ignore_index=True)
 
 
@@ -89,8 +90,17 @@ def main():
     }
     processor = S3ParquetProcessor(**aws_params)
 
+    print("Branches summary:")
+    df = processor.read_parquet_file('branches')
+    print(df)
+
+    print("\nCatalog summary:")
+    df = processor.read_parquet_file('catalog')
+    print(df)
+    print()
+
     parquet_files = processor.list_parquet_files(args.preffix)
-    print(f"Found {len(parquet_files)} parquet files")
+    print(f"Found {len(parquet_files)} weeks of sales.")
 
     if parquet_files:
         df = processor.read_multiple_parquet_files(parquet_files)
@@ -99,14 +109,20 @@ def main():
         #print(df.describe())
 
         daily_summary = df.groupby([
+            df['acronym'],
             df['confirm_date'].dt.date,
             df['code']
         ]).agg({
             'price': ['sum', 'mean'],
             'quantity': ['sum', 'mean']
-        })
+        }).sort_values(
+            by=['confirm_date', 'acronym']
+        )
         print("\nDaily SaleItem summary:")
         print(daily_summary)
+
+
+
 
 
 if __name__ == "__main__":
