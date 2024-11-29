@@ -1,11 +1,14 @@
 import argparse
-import pandas as pd
 import boto3
-import pyarrow.parquet as pq
+import datetime
+import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
+import time
+
+from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
 from typing import List, Union, Optional
-import datetime
 
 
 class S3ParquetProcessor:
@@ -51,25 +54,35 @@ class S3ParquetProcessor:
 
         return parquet_files
 
-    def read_parquet_file(self, s3_key: str) -> pd.DataFrame:
+    def read_parquet_file(self, s3_key: str) -> (pd.DataFrame, str, int, float):
         """Read a single parquet file from S3"""
+        start = time.time()
         response = self.s3_client.get_object(Bucket=self.bucket_name, Key=s3_key)
         parquet_buffer = BytesIO(response['Body'].read())
-        return pd.read_parquet(parquet_buffer)
+        df =  pd.read_parquet(parquet_buffer)
+        end = time.time()
+        duration = end - start
+        length = response['ContentLength']
+        return df, s3_key, length, duration
 
     def read_multiple_parquet_files(
         self,
         s3_keys: List[str],
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        workers: Optional[int] = None,
     ) -> pd.DataFrame:
         """Read and concatenate multiple parquet files"""
+        executor = ThreadPoolExecutor(max_workers=workers)
+        futures = [executor.submit(self.read_parquet_file, k) for k in s3_keys]
         dfs = []
-        for key in s3_keys:
-            df = self.read_parquet_file(key)
+        for f in futures:
+            df, key, length, duration = f.result()
+            #print(f"{key} ({length:05} bytes)-> {duration:0.3f}")
             if columns:
                 df = df[columns].dropna()
             if not df.empty:
                 dfs.append(df)
+
         return pd.concat(dfs, ignore_index=True)
 
 
@@ -78,6 +91,7 @@ def main():
     parser = argparse.ArgumentParser(description='Process parquet files ...')
     parser.add_argument('bucket_name', type=str, default='zoing', help='Name of the S3 bucket')
     parser.add_argument('-p', '--preffix', type=str, default='raw_data/', help='File prefix')
+    parser.add_argument('-w', '--workers', type=int, default=None, help='Number of workers')
     args = parser.parse_args()
 
     aws_params = {
@@ -103,7 +117,7 @@ def main():
     print(f"Found {len(parquet_files)} weeks of sales.")
 
     if parquet_files:
-        df = processor.read_multiple_parquet_files(parquet_files)
+        df = processor.read_multiple_parquet_files(parquet_files, workers=args.workers)
         #print("\nData summary:")
         #print(df.columns)
         #print(df.describe())
