@@ -35,7 +35,15 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 # Create an S3 client
-S3_CONFIG = botocore.client.Config(connect_timeout=15, read_timeout=10, retries={'max_attempts': 5})
+S3_CONFIG = botocore.client.Config(
+    # Snappier timeouts & limited retries
+    connect_timeout=10,
+    read_timeout=10,
+    retries={'max_attempts': 3},
+    # Suppress chunked-uploads, default in recent boto3 versions.
+    request_checksum_calculation="when_required",
+    response_checksum_validation="when_required",
+)
 s3 = boto3.resource('s3', config=S3_CONFIG)
 
 
