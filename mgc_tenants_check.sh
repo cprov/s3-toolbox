@@ -32,7 +32,7 @@ for id in $(mgc auth tenant list -r | yq '.[] | .uuid'); do
 	# XXX 20250901 cprov: IAM API returns an ugly 404 until activation.
 	IGNORED=$(mgc iam access-control list -r 2>&1 > /dev/null)
 	if [[ "$?" -eq 0 ]]; then
-	    echo -e "\t$GRE Turia IAM was activated via console.$ESC"
+	    echo -e "\t$GRE Turia IAM was activated.$ESC"
 	    IAM=$(mgc iam access-control list -r)
 
 	    # Check if RBAC is enabled.
@@ -51,7 +51,15 @@ for id in $(mgc auth tenant list -r | yq '.[] | .uuid'); do
 		echo -e "\t$RED MFA IS NOT enforced.$ESC"
 	    fi
 	else
-	    echo -e "\t$RED Turia IAM NEEDS activation via console.$ESC"
+	    echo -e "\t$RED Turia IAM NEEDS activation.$ESC"
 	fi
     fi
+    SE1_VPC_ID=$(mgc network vpcs list -r | yq '.vpcs[0] | .id' -r)
+    SE1_IC_NETS=$(mgc network vpcs subnets list ${SE1_VPC_ID} --region br-se1 -r | yq '.subnets[] | select(.ip_version = "IPv4") | .["cidr_block"]' -r | grep -E "^(10\.124|10\.175|10\.139|10\.136|10\.173|10\.125|10\.140).*" | xargs)
+    if [[ "$SE1_IC_NETS" -gt 0 ]]; then
+	echo -e "\t$YEL HAS MAGALU interconnect: $SE1_IC_NETS"
+    else
+	echo -e "\t$GRE NOT connected to MAGALU"
+    fi
+
 done
