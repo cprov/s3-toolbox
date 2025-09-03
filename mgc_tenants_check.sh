@@ -54,12 +54,24 @@ for id in $(mgc auth tenant list -r | yq '.[] | .uuid'); do
 	    echo -e "\t$RED Turia IAM NEEDS activation.$ESC"
 	fi
     fi
-    SE1_VPC_ID=$(mgc network vpcs list -r | yq '.vpcs[0] | .id' -r)
-    SE1_IC_NETS=$(mgc network vpcs subnets list ${SE1_VPC_ID} --region br-se1 -r | yq '.subnets[] | select(.ip_version = "IPv4") | .["cidr_block"]' -r | grep -E "^(10\.124|10\.175|10\.139|10\.136|10\.173|10\.125|10\.140).*" | xargs)
-    if [[ "$SE1_IC_NETS" -gt 0 ]]; then
-	echo -e "\t$YEL HAS MAGALU interconnect: $SE1_IC_NETS"
+
+    IC_NETS_REGEX="^(10\.124|10\.175|10\.139|10\.136|10\.173|10\.125|10\.140).*"
+
+    SE1_VPC_ID=$(mgc network vpcs list --region br-se1 -r | yq '.vpcs[0] | .id' -r)
+    SE1_IC_NETS=$(mgc network vpcs subnets list ${SE1_VPC_ID} --region br-se1 -r | yq '.subnets[] | select(.ip_version = "IPv4") | .["cidr_block"]' -r | grep -E "$IC_NETS_REGEX" | xargs)
+    if [ -n "$SE1_IC_NETS" ]; then
+	echo -e "\t$YEL BR-SE1 HAS MAGALU interconnect: $SE1_IC_NETS"
     else
-	echo -e "\t$GRE NOT connected to MAGALU"
+	echo -e "\t$GRE BR-SE1 NOT connected to MAGALU"
     fi
+
+    NE1_VPC_ID=$(mgc network vpcs list --region br-ne1 -r | yq '.vpcs[0] | .id' -r)
+    NE1_IC_NETS=$(mgc network vpcs subnets list ${NE1_VPC_ID} --region br-ne1 -r | yq '.subnets[] | select(.ip_version = "IPv4") | .["cidr_block"]' -r | grep -E "$IC_NETS_REGEX" | xargs)
+    if [ -n "$NE1_IC_NETS" ]; then
+	echo -e "\t$YEL BR-NE1 HAS MAGALU interconnect: $NE1_IC_NETS"
+    else
+	echo -e "\t$GRE BR-NE1 NOT connected to MAGALU"
+    fi
+
 
 done
