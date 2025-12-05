@@ -1,6 +1,6 @@
 aioboto3
 boto3>=1.36.1
 fastapi
-uvicorn
+granian[reload]
 pandas
 pyarrow

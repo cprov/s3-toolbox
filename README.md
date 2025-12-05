@@ -53,15 +53,14 @@ Bonus (or not), it includes a comparison with the same task done synchronously.
 The same tool is also an awsgi handler (thanks FastAPI):
 
 ```
-uvicorn aio_s3_bucket_listing:app --reload
-INFO:     Will watch for changes in these directories: ['/home/cprov/Development/Cloud/s3-toolbox']
-INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
-INFO:     Started reloader process [757232] using StatReload
-INFO:     Started server process [757234]
-INFO:     Waiting for application startup.
-INFO:     Application startup complete.
-INFO:     127.0.0.1:39756 - "GET /async HTTP/1.1" 200 OK
-INFO:     127.0.0.1:58470 - "GET /sync HTTP/1.1" 200 OK
+python -m granian aio_s3_bucket_listing:app --interface asgi --access-log
+[INFO] Starting granian (main PID: 139160)
+[INFO] Listening at: http://127.0.0.1:8000
+[INFO] Spawning worker-1 with PID: 139161
+[INFO] Started worker-1
+[INFO] Started worker-1 runtime-1
+[2025-12-05 00:09:51 -0300] 127.0.0.1 - "GET /async HTTP/1.1" 200 12892.647
+[2025-12-05 00:11:03 -0300] 127.0.0.1 - "GET /sync HTTP/1.1" 200 51322.781
 ```
 
 Then `curl` is your friend ...
